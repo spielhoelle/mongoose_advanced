@@ -1,4 +1,6 @@
-const app = require("express")();
+const express = require("express");
+const app = express();
+app.use(express.static('assets'));
 const mongoose = require("mongoose");
 var path = require("path");
 mongoose.connect("mongodb://localhost:27017/aqmpoints", {
@@ -6,19 +8,27 @@ mongoose.connect("mongodb://localhost:27017/aqmpoints", {
   useCreateIndex: true,
   useUnifiedTopology: true
 });
-const Aqmpoint = require("./Aqmpoint");
+const Aqmpoint = require("./models/Aqmpoint");
+const User = require("./models/User");
+
+const userData = [{ email: "admin@example.com" }, { email: "user@example.com" }];
 const aqmData = require("./out3.json");
 
-//view engine setup
 app.set("views", path.join(__dirname, "views")); //setting views directory for views.
 app.set("view engine", "hbs"); //setting view engine as handlebars
 (async () => {
   await Aqmpoint.deleteMany();
-  await Aqmpoint.insertMany(aqmData);
+  await User.deleteMany();
+  const createdUser = await User.insertMany(userData);
+  aqmData.map(p => p.user = createdUser[Math.floor(Math.random() * createdUser.length)]._id)
+  const createdPoints = await Aqmpoint.insertMany(aqmData);
 })()
-app.get("/", async (req, res) => {
-  let aqmpoints = await Aqmpoint.find();
-  res.render("index", { people: aqmpoints }); //passing list of people to our index.hbs file.
+
+app.get("/:userId?", async (req, res) => {
+  const query = req.params.userId ? {user: req.params.userId} : {}
+  let aqmpoints = await Aqmpoint.find(query);
+  let users = await User.find();
+  res.render("index", { aqmpoints, users });
 });
 
 app.listen(3000);

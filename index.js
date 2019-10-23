@@ -26,7 +26,9 @@ app.set("view engine", "hbs"); //setting view engine as handlebars
 
 app.get("/:userId?", async (req, res) => {
   const query = req.params.userId ? {user: req.params.userId} : {}
-  let aqmpoints = await Aqmpoint.find(query);
+  let aqmpoints = await Aqmpoint
+    .find(query)
+    .populate("user");
   let users = await User.find();
   res.render("index", { aqmpoints, users });
 });
